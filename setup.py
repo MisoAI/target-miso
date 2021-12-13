@@ -17,7 +17,7 @@ setup(
     classifiers=['Programming Language :: Python :: 3 :: Only'],
     py_modules=['target_miso'],
     install_requires=['urllib3==1.26.7', 'singer-python==5.12.2', 'requests==2.26.0',
-                      'jinja2==3.0.3'],
+                      'jinja2==3.0.3', 'sentry-sdk==1.5.0'],
     entry_points='''
           [console_scripts]
           target-miso=target_miso:main

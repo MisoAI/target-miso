@@ -10,11 +10,13 @@ from os import path
 from typing import Callable, List, Dict, Optional
 
 import requests
+import sentry_sdk
 import singer
 from jinja2 import Environment, FileSystemLoader
 from jsonschema import Draft4Validator
 from requests import HTTPError
 from requests.adapters import HTTPAdapter
+from sentry_sdk import set_tag, capture_message
 from singer import utils
 from urllib3 import Retry
 
@@ -23,6 +25,10 @@ params = utils.parse_args({'template_folder', 'api_server', 'api_key'})
 folder_path = params.config['template_folder']
 api_server = params.config['api_server']
 api_key = params.config['api_key']
+if 'sentry_dsn' in params.config:
+    sentry_sdk.init(dsn=params.config['sentry_dsn'])
+    if 'sentry_source' in params.config:
+        set_tag("source", params.config['sentry_source'])
 
 
 def datetime_format(value: str) -> str:
@@ -128,12 +134,9 @@ def send_request(data: List[Dict], data_type: str):
         response.raise_for_status()
         logger.info(response.text)
     except HTTPError as error:
-        logger.info(data)
-        logger.info(error.response.text)
-        logger.exception(error)
+        capture_message("{}\n{}".format(error.response.text, data))
     except ConnectionError as error:
-        logger.info(data)
-        logger.exception(error)
+        capture_message("{}\n{}".format(error, data))
 
 
 def persist_messages(messages, env: Environment):
@@ -145,11 +148,15 @@ def persist_messages(messages, env: Environment):
         try:
             o = singer.parse_message(message).asdict()
         except json.decoder.JSONDecodeError:
-            logger.error("Unable to parse:\n{}".format(message))
+            msg = "Unable to parse:\n{}".format(message)
+            logger.error(msg)
+            capture_message(msg)
             raise
         message_type = o['type']
         if 'stream' in o and not path.exists(f'{folder_path}/{o["stream"]}.json'):
-            logger.error('Unknown stream {} in message.'.format(o['stream']))
+            msg = 'Unknown stream {} in message.'.format(o['stream'])
+            logger.error(msg)
+            capture_message(msg)
             raise
         if message_type == 'RECORD':
             template = env.get_template(f"{o['stream']}.json")
