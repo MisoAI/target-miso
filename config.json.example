@@ -1,3 +1,5 @@
 {
-    "template_folder": "templates"
+    "template_folder": "/template",
+    "api_server": "https://api.askmiso.com",
+    "api_key": "xxx"
 }
