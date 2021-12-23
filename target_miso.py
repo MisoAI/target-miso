@@ -77,6 +77,7 @@ def remove_symbol(value: Optional[str]) -> str:
     value = value.replace("“", '')
     value = value.replace("\r\n", '')
     value = value.replace("\n", '')
+    value = value.replace(r'\r', '')
     return value
 
 
