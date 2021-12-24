@@ -58,6 +58,12 @@ def str_to_categories(value: Optional[str]) -> Optional[list]:
     return [[str(value)]]
 
 
+def str_split_with_comma(value: Optional[str]) -> list:
+    if not value:
+        return []
+    return str(value).split(',')
+
+
 def str_to_list_of_str(value: Optional[str]) -> Optional[list]:
     if not value:
         return
@@ -205,6 +211,7 @@ def main():
     env.filters['list_of_str'] = str_to_list_of_str
     env.filters['convert_categories'] = str_to_categories
     env.filters['remove_symbol'] = remove_symbol
+    env.filters['split'] = str_split_with_comma
 
     input_messages = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
     state = persist_messages(input_messages, env)
