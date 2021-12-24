@@ -77,7 +77,7 @@ def remove_symbol(value: Optional[str]) -> str:
         return ''
     if isinstance(value, int):
         return str(value)
-    value = value.replace('"', '')
+    value = str(value).replace('"', '')
     value = value.replace("\\", '')
     value = value.replace("\\\\N", '')
     value = value.replace("“", '')
