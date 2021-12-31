@@ -8,6 +8,7 @@ from datetime import datetime
 from decimal import Decimal
 from os import path
 from typing import Callable, List, Dict, Optional
+from urllib.parse import urlparse, quote
 
 import requests
 import sentry_sdk
@@ -29,6 +30,11 @@ if 'sentry_dsn' in params.config:
     sentry_sdk.init(dsn=params.config['sentry_dsn'])
     if 'sentry_source' in params.config:
         set_tag("source", params.config['sentry_source'])
+
+
+def fix_url(value: str) -> str:
+    url = urlparse(value)
+    return url._replace(path=quote(url.path)).geturl()
 
 
 def datetime_format(value: str) -> str:
@@ -213,6 +219,7 @@ def main():
     env.filters['convert_categories'] = str_to_categories
     env.filters['remove_symbol'] = remove_symbol
     env.filters['split'] = str_split_with_comma
+    env.filters['fix_url'] = fix_url
 
     input_messages = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
     state = persist_messages(input_messages, env)
