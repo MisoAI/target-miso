@@ -202,9 +202,10 @@ def persist_messages(messages, env: Environment):
             key_properties[stream] = o['key_properties']
         else:
             logger.warning("Unknown message type {} in message {}".format(o['type'], o))
+        if len(data) > limit:
             send_request(data, data_type)
             data = []
-    if len(data) > limit:
+    if len(data) > 0:
         send_request(data, data_type)
     return state
 
