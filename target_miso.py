@@ -181,6 +181,7 @@ def persist_messages(messages, env: Environment):
                 msg = "Unable to parse record:\n{}".format(o['record'])
                 logger.error(msg)
                 capture_message(msg)
+                continue
             if not data_type:
                 if 'product_id' in result:
                     data_type = 'products'
