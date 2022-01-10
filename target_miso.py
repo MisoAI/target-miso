@@ -177,9 +177,10 @@ def persist_messages(messages, env: Environment):
             try:
                 result = ast.literal_eval(template.render(data=o['record']))
                 data.append(result)
-            except Exception:
+            except Exception as error:
                 msg = "Unable to parse record:\n{}".format(o['record'])
                 logger.error(msg)
+                logger.error(error)
                 capture_message(msg)
                 continue
             if not data_type:
