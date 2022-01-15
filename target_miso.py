@@ -17,7 +17,7 @@ from jinja2 import Environment, FileSystemLoader
 from jsonschema import Draft4Validator
 from requests import HTTPError
 from requests.adapters import HTTPAdapter
-from sentry_sdk import set_tag, capture_message
+from sentry_sdk import set_tag, capture_message, capture_exception
 from singer import utils
 from urllib3 import Retry
 
@@ -152,9 +152,43 @@ def send_request(data: List[Dict], data_type: str):
         capture_message("{}\n{}".format(error, data))
 
 
+def get_miso_ids(data_type: str):
+    logger.info("try to get %s miso ids.", data_type)
+    try:
+        res = session.get(
+            '{}/v1/{}/_ids'.format(api_server, data_type),
+            headers={'X-API-Key': api_key})
+        res.raise_for_status()
+        return res.json()['data']['ids']
+    except HTTPError as err:
+        if err.response.status_code == 404:
+            return []
+        logger.error(err)
+        capture_exception(err)
+    except ConnectionError as err:
+        logger.error(err)
+        capture_exception(err)
+
+
+def bulk_delete_product(bulk_del_ids: set, data_type: str):
+    logger.info("Send bulk delete %s by ids to miso", data_type)
+    col_name = 'product_ids'
+    if data_type == 'users':
+        col_name = 'user_ids'
+    for id in list(bulk_del_ids):
+        logger.info("Tye to delete ID: %s", id)
+    ret = session.post(
+        '{}/v1/{}/_delete'.format(api_server, data_type),
+        json={"data": {col_name: list(bulk_del_ids)}},
+        headers={'X-API-Key': api_key})
+    logger.info("Receive response from delete %s", data_type)
+    ret.raise_for_status()
+
+
 def persist_messages(messages, env: Environment):
     state = None
     data = []
+    ids = []
     schemas = key_properties = validators = {}
     data_type = None
     limit = 99
@@ -193,6 +227,10 @@ def persist_messages(messages, env: Environment):
                         data_type = 'users'
                 else:
                     data_type = 'interactions'
+            if data_type == 'products':
+                ids.append(result['product_id'])
+            elif data_type == 'users':
+                ids.append(result['user_id'])
         elif message_type == 'STATE':
             logger.debug('Setting state to {}'.format(o['value']))
             state = o['value']
@@ -208,6 +246,10 @@ def persist_messages(messages, env: Environment):
             data = []
     if len(data) > 0:
         send_request(data, data_type)
+    if data_type in ('products', 'users'):
+        del_ids = set(get_miso_ids(data_type)).difference(set(ids))
+        if len(del_ids) > 0:
+            bulk_delete_product(del_ids, data_type)
     return state
 
 
