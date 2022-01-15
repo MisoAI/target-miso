@@ -227,9 +227,9 @@ def persist_messages(messages, env: Environment):
                         data_type = 'users'
                 else:
                     data_type = 'interactions'
-            if data_type == 'products':
+            if data_type == 'products' and 'product_id' in result:
                 ids.append(result['product_id'])
-            elif data_type == 'users':
+            elif data_type == 'users' and 'user_id' in result:
                 ids.append(result['user_id'])
         elif message_type == 'STATE':
             logger.debug('Setting state to {}'.format(o['value']))
