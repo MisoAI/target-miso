@@ -188,7 +188,8 @@ def bulk_delete_product(bulk_del_ids: set, data_type: str):
 def persist_messages(messages, env: Environment):
     state = None
     data = []
-    ids = []
+    product_ids = []
+    user_ids = []
     schemas = key_properties = validators = {}
     data_type = None
     limit = 99
@@ -216,21 +217,27 @@ def persist_messages(messages, env: Environment):
                 logger.error(msg)
                 capture_message(msg)
                 continue
-            if not data_type:
-                if 'product_id' in result:
-                    data_type = 'products'
-                elif 'user_id' in result:
-                    if 'type' in result:
-                        data_type = 'interactions'
-                        limit = 999
-                    else:
-                        data_type = 'users'
-                else:
+
+            # detect data_type everytime
+            if 'product_id' in result:
+                data_type = 'products'
+            elif 'user_id' in result:
+                if 'type' in result:
                     data_type = 'interactions'
+                else:
+                    data_type = 'users'
+            else:
+                data_type = 'interactions'
+
+            # set limit, default use 100 for each bulk request
+            limit = 99
+            if data_type == 'interactions':
+                limit = 999
+
             if data_type == 'products' and 'product_id' in result:
-                ids.append(result['product_id'])
+                product_ids.append(result['product_id'])
             elif data_type == 'users' and 'user_id' in result:
-                ids.append(result['user_id'])
+                user_ids.append(result['user_id'])
         elif message_type == 'STATE':
             logger.debug('Setting state to {}'.format(o['value']))
             state = o['value']
@@ -246,11 +253,19 @@ def persist_messages(messages, env: Environment):
             data = []
     if len(data) > 0:
         send_request(data, data_type)
-    if data_type in ('products', 'users'):
-        del_ids = set(get_miso_ids(data_type)).difference(set(ids))
-        if len(del_ids) > 0:
-            bulk_delete_product(del_ids, data_type)
+
+    # Start delete removed data
+    if len(product_ids) > 0:
+        delete_datasets(product_ids, 'products')
+    if len(user_ids) > 0:
+        delete_datasets(user_ids, 'users')
     return state
+
+
+def delete_datasets(ids: list, data_type: str):
+    del_ids = set(get_miso_ids(data_type)).difference(set(ids))
+    if len(del_ids) > 0:
+        bulk_delete_product(del_ids, data_type)
 
 
 def main():
