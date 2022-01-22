@@ -19,6 +19,7 @@ from requests import HTTPError
 from requests.adapters import HTTPAdapter
 from sentry_sdk import set_tag, capture_message, capture_exception
 from singer import utils
+from toolz import partition_all
 from urllib3 import Retry
 
 
@@ -256,9 +257,11 @@ def persist_messages(messages, env: Environment):
 
     # Start delete removed data
     if len(product_ids) > 0:
-        delete_datasets(product_ids, 'products')
+        for chunk_ids in partition_all(100, product_ids):
+            delete_datasets(chunk_ids, 'products')
     if len(user_ids) > 0:
-        delete_datasets(user_ids, 'users')
+        for chunk_ids in partition_all(100, user_ids):
+            delete_datasets(chunk_ids, 'users')
     return state
 
 
