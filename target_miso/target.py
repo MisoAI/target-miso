@@ -29,7 +29,7 @@ def eval_jsonnet(snippet: str, data: dict):
     data_json = json.dumps(data)
     output = _jsonnet.evaluate_snippet(
         "snippet",
-        f'local data = {data_json};' + snippet)
+        f'local data = {data_json};\n' + snippet)
     return json.loads(output)
 
 
