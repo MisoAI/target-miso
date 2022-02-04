@@ -17,7 +17,7 @@ setup(
     classifiers=['Programming Language :: Python :: 3 :: Only'],
     packages=['target_miso'],
     install_requires=['singer-python', 'requests',
-                      'jsonnet', 'sentry-sdk'],
+                      'jsonnet', 'sentry-sdk', 'simplejson'],
     entry_points='''
           [console_scripts]
           target-miso=target_miso:main

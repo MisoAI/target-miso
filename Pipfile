@@ -10,6 +10,7 @@ singer-python = "*"
 requests = "*"
 sentry-sdk = "*"
 jsonnet = "*"
+simplejson = "*"
 
 
 [requires]

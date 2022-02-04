@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import io
-import json
+import simplejson as json
 import sys
 from pathlib import Path
 from typing import Dict
