@@ -15,7 +15,7 @@ setup(
     url="https://gitlab.com/askmiso/target-miso",
     keywords=["singer", "singer.io", "target", "etl"],
     classifiers=['Programming Language :: Python :: 3 :: Only'],
-    py_modules=['target_miso'],
+    packages=['target_miso'],
     install_requires=['singer-python', 'requests',
                       'jsonnet', 'sentry-sdk'],
     entry_points='''

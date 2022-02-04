@@ -10,7 +10,7 @@ import sentry_sdk
 import singer
 from sentry_sdk import set_tag
 
-from miso import MisoWriter
+from .miso import MisoWriter
 
 logger = singer.get_logger()
 
