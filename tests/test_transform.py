@@ -1,5 +1,5 @@
 """ Test eval jsonnet """
-from target_miso import eval_jsonnet
+from target_miso.target import eval_jsonnet
 
 
 def test_transform():

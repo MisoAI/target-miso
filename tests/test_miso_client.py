@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from miso import MisoWriter
+from target_miso.miso import MisoWriter
 
 
 def test_write_and_flush():

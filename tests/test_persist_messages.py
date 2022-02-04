@@ -2,7 +2,7 @@
 import json
 from unittest.mock import MagicMock
 
-from target_miso import persist_messages
+from target_miso.target import persist_messages
 
 def test_persist_message():
     """ Test persist message function is working as expected """
