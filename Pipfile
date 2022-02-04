@@ -2,15 +2,15 @@
 url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
+[dev-packages]
+pytest = "*"
 
 [packages]
 singer-python = "*"
-urllib3 = "*"
 requests = "*"
-jinja2 = "*"
 sentry-sdk = "*"
+jsonnet = "*"
 
-[dev-packages]
 
 [requires]
-python_version = "3.9"
+python_version = "3"
