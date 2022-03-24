@@ -6,10 +6,10 @@ import requests
 import singer
 from requests import HTTPError
 from requests.adapters import HTTPAdapter
-from sentry_sdk import capture_message
 from urllib3 import Retry
 
 logger = singer.get_logger()
+
 
 class MisoWriter:
     def __init__(self, api_server: str, api_key: str):
@@ -28,7 +28,7 @@ class MisoWriter:
         self.api_key = api_key
 
     def _send_request(self, data: List[Dict], data_type: str):
-        logger.info("try to send {} requests to data-api.".format(len(data)))
+        logger.info("try to send {} requests to {}-data-api.".format(len(data), data_type))
         try:
             response = self.session.post(
                 '{}/v1/{}?api_key={}'.format(self.api_server, data_type, self.api_key),
@@ -37,9 +37,9 @@ class MisoWriter:
             response.raise_for_status()
             logger.info(response.text)
         except HTTPError as error:
-            capture_message("{}\n{}".format(error.response.text, data))
-        except ConnectionError as error:
-            capture_message("{}\n{}".format(error, data))
+            logger.exception("Request %s\n Response %s".format(data, error.response.text))
+        except ConnectionError:
+            logger.exception('Connection error')
 
     def get_existing_ids(self, data_type: str):
         """ Get existing ids from Miso _ids API """
@@ -47,7 +47,7 @@ class MisoWriter:
         try:
             res = self.session.get(
                 '{}/v1/{}/_ids?api_key={}'.format(self.api_server, data_type, self.api_key)
-                )
+            )
             res.raise_for_status()
             return res.json()['data']['ids']
         except HTTPError as err:
@@ -84,6 +84,7 @@ class MisoWriter:
         if len(buffer) >= limit:
             self._send_request(buffer, data_type)
             buffer.clear()
+
     def flush(self):
         for data_type in list(self.type_to_buffer):
             buf = self.type_to_buffer[data_type]
