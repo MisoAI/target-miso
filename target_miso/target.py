@@ -15,8 +15,6 @@ from .miso import MisoWriter
 logger = singer.get_logger()
 
 
-
-
 def emit_state(state):
     """ Output state to STDOUT"""
     if state is not None:
@@ -25,13 +23,13 @@ def emit_state(state):
         sys.stdout.write("{}\n".format(line))
         sys.stdout.flush()
 
+
 def eval_jsonnet(snippet: str, data: dict):
     data_json = json.dumps(data)
     output = _jsonnet.evaluate_snippet(
         "snippet",
         f'local data = {data_json};\n' + snippet)
     return json.loads(output)
-
 
 
 def persist_messages(messages, miso_client: MisoWriter, stream_to_template: Dict[str, str]):
@@ -49,12 +47,13 @@ def persist_messages(messages, miso_client: MisoWriter, stream_to_template: Dict
             # write a record to Miso
             steam_name = msg_obj['stream']
             template: str = stream_to_template[steam_name]
+            miso_record = None
             try:
                 miso_record = eval_jsonnet(template, msg_obj['record'])
             except Exception:
                 logger.exception("Unable to parse record: %s", msg_obj['record'])
-                raise
-            miso_client.write_record(miso_record)
+            if miso_record:
+                miso_client.write_record(miso_record)
         elif message_type == 'STATE':
             logger.debug('Setting state to {}'.format(msg_obj['value']))
             state = msg_obj['value']
