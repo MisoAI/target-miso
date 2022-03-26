@@ -11,7 +11,8 @@ requests = "*"
 sentry-sdk = "*"
 jsonnet = "*"
 simplejson = "*"
-
+Jinja2 = "*"
+dateparser = "*"
 
 [requires]
 python_version = "3"

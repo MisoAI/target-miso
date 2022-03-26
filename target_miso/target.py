@@ -8,8 +8,10 @@ from typing import Dict
 import _jsonnet
 import sentry_sdk
 import singer
+from jinja2 import Template
 from sentry_sdk import set_tag
 
+from target_miso.extensions import get_jinja_env
 from .miso import MisoWriter
 
 logger = singer.get_logger()
@@ -32,7 +34,9 @@ def eval_jsonnet(snippet: str, data: dict):
     return json.loads(output)
 
 
-def persist_messages(messages, miso_client: MisoWriter, stream_to_template: Dict[str, str]):
+def persist_messages(messages, miso_client: MisoWriter,
+                     stream_to_template_jsonnet: Dict[str, str],
+                     stream_to_template_jinja: Dict[str, Template]):
     state = None
     schemas = {}
     for message in messages:
@@ -41,17 +45,25 @@ def persist_messages(messages, miso_client: MisoWriter, stream_to_template: Dict
         except json.decoder.JSONDecodeError:
             raise ValueError(f"Unable to parse: {message}")
         message_type = msg_obj['type']
-        if 'stream' in msg_obj and msg_obj['stream'] not in stream_to_template:
+        if 'stream' in msg_obj and (msg_obj['stream'] not in stream_to_template_jsonnet and
+                                    msg_obj['stream'] not in stream_to_template_jinja):
             raise ValueError(f"template for stream: {msg_obj['stream']} not found")
         if message_type == 'RECORD':
             # write a record to Miso
             steam_name = msg_obj['stream']
-            template: str = stream_to_template[steam_name]
             miso_record = None
-            try:
-                miso_record = eval_jsonnet(template, msg_obj['record'])
-            except Exception:
-                logger.exception("Unable to parse record: %s", msg_obj['record'])
+            if steam_name in stream_to_template_jsonnet:
+                template: str = stream_to_template_jsonnet[steam_name]
+                try:
+                    miso_record = eval_jsonnet(template, msg_obj['record'])
+                except Exception:
+                    logger.exception("Unable to parse record: %s", msg_obj['record'])
+            if steam_name in stream_to_template_jinja:
+                jinja_template: Template = stream_to_template_jinja[steam_name]
+                try:
+                    miso_record = json.loads(jinja_template.render(data=msg_obj['record']))
+                except Exception:
+                    logger.exception("Unable to parse record: %s", msg_obj['record'])
             if miso_record:
                 miso_client.write_record(miso_record)
         elif message_type == 'STATE':
@@ -96,10 +108,18 @@ def main():
     template_folder_path = Path(params.config['template_folder'])
     if not template_folder_path.exists():
         raise ValueError(f"template_folder {params.config['template_folder']} does not exist")
-    stream_to_template = {path.stem: path.open().read() for path in template_folder_path.glob('*.jsonnet')}
+    stream_to_template_jsonnet = {
+        path.stem: path.open().read() for path in
+        template_folder_path.glob('*.jsonnet')}
+    jinja_env = get_jinja_env(template_folder_path)
+    stream_to_template_jinja: Dict[str, Template] = {
+        path.stem: jinja_env.get_template(path.name) for path in
+        template_folder_path.glob('*.jinja')}
 
     input_messages = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
-    state = persist_messages(input_messages, miso_client, stream_to_template)
+    state = persist_messages(input_messages, miso_client,
+                             stream_to_template_jsonnet,
+                             stream_to_template_jinja)
 
     emit_state(state)
     logger.debug("Exiting normally")
