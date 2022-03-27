@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 from urllib.parse import urlparse, quote
 
@@ -64,4 +65,5 @@ def get_jinja_env(folder_path):
     env.filters['remove_symbol'] = remove_symbol
     env.filters['split'] = str_split_with_comma
     env.filters['fix_url'] = fix_url
+    env.filters['jsonify'] = json.dumps
     return env
