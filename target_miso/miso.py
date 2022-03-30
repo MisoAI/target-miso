@@ -37,7 +37,7 @@ class MisoWriter:
             response.raise_for_status()
             logger.info(response.text)
         except HTTPError as error:
-            logger.exception("Request %s\n Response %s".format(data, error.response.text))
+            logger.exception("Request %s\n Response %s", data, error.response.text)
         except ConnectionError:
             logger.exception('Connection error')
 
