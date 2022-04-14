@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import gzip
-import zlib
-from io import BytesIO
 from typing import List, Dict, Set
 
 import requests
@@ -11,6 +8,19 @@ from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
 logger = singer.get_logger()
+
+
+def check_miso_data_type(record):
+    """ Determine data type """
+    if 'product_id' in record:
+        data_type = 'products'
+    elif 'type' in record and ('user_id' in record or 'anonymous_id' in record):
+        data_type = 'interactions'
+    elif 'user_id' in record:
+        data_type = 'users'
+    else:
+        raise ValueError(f'This record is not product, user, nor interaction: {record}')
+    return data_type
 
 
 class MisoWriter:
@@ -62,12 +72,10 @@ class MisoWriter:
 
     def delete_records(self, bulk_del_ids: Set[str], data_type: str):
         """ Delete a list of records from Miso """
-        logger.info("Send bulk delete %s by ids to miso", data_type)
+        logger.info("Send bulk delete %s by ids to miso. Ids: %s", data_type, bulk_del_ids)
         col_name = 'product_ids'
         if data_type == 'users':
             col_name = 'user_ids'
-        for id_ in list(bulk_del_ids):
-            logger.info("Tye to delete ID: %s", id_)
         ret = self.session.post(
             '{}/v1/{}/_delete?api_key={}'.format(self.api_server, data_type, self.api_key),
             json={"data": {col_name: list(bulk_del_ids)}})
@@ -75,17 +83,11 @@ class MisoWriter:
         ret.raise_for_status()
 
     def write_record(self, record: Dict):
-        if 'product_id' in record:
-            data_type = 'products'
-        elif 'type' in record and ('user_id' in record or 'anonymous_id' in record):
-            data_type = 'interactions'
-        elif 'user_id' in record:
-            data_type = 'users'
-        else:
-            raise ValueError(f'This record is not product, user, nor interaction: {record}')
+        """ Write record to Miso """
+        data_type = check_miso_data_type(record)
         buffer = self.type_to_buffer[data_type]
         buffer.append(record)
-        limit = 1000 if data_type == 'interactions' else 100
+        limit = 1000 if data_type == 'interactions' else 200
         if len(buffer) >= limit:
             self._send_request(buffer, data_type)
             buffer.clear()
