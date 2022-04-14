@@ -12,7 +12,7 @@ logger = singer.get_logger()
 
 
 class MisoWriter:
-    def __init__(self, api_server: str, api_key: str):
+    def __init__(self, api_server: str, api_key: str, use_async: bool):
         self.type_to_buffer = {'products': [], 'interactions': [], 'users': []}
 
         retry_strategy = Retry(
@@ -26,12 +26,14 @@ class MisoWriter:
         self.session.mount("https://", adapter)
         self.api_server = api_server
         self.api_key = api_key
+        self.use_async = use_async
 
     def _send_request(self, data: List[Dict], data_type: str):
         logger.info("try to send {} requests to {}-data-api.".format(len(data), data_type))
         try:
             response = self.session.post(
-                '{}/v1/{}?api_key={}'.format(self.api_server, data_type, self.api_key),
+                '{}/v1/{}?api_key={}&async={}'.format(self.api_server, data_type, self.api_key,
+                                                      1 if self.use_async else 0),
                 json={'data': list(data)}
             )
             response.raise_for_status()
