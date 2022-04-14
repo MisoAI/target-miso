@@ -97,6 +97,8 @@ def persist_messages(messages, miso_client: MisoWriter,
         elif message_type == 'SCHEMA':
             stream = msg_obj['stream']
             schemas[stream] = msg_obj['schema']
+        elif message_type == 'ACTIVATE_VERSION':
+            pass
         else:
             logger.warning("Unknown message type {} in message {}".format(msg_obj['type'], msg_obj))
     # write remain records in the buffer
@@ -144,7 +146,8 @@ def main():
     # load Miso API parameters
     api_server = params.config['api_server']
     api_key = params.config['api_key']
-    miso_client = MisoWriter(api_server, api_key)
+    use_async = str(params.config['use_async']).lower() in ('true', '1')
+    miso_client = MisoWriter(api_server, api_key, use_async)
 
     if 'sentry_dsn' in params.config:
         sentry_sdk.init(dsn=params.config['sentry_dsn'])
