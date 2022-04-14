@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-
+import gzip
+import zlib
+from io import BytesIO
 from typing import List, Dict, Set
 
 import requests
@@ -9,6 +11,21 @@ from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
 logger = singer.get_logger()
+
+
+class GzipAdapter(HTTPAdapter):
+
+    def add_headers(self, request, **kw):
+        request.headers['Content-Encoding'] = 'gzip'
+
+    def send(self, request, stream=False, **kw):
+        if stream is True:
+            request.body = gzip.GzipFile(filename=request.url,
+                                         fileobj=request.body)
+        else:
+            request.body = zlib.compress(request.body)
+
+        return super(GzipAdapter, self).send(request, stream, **kw)
 
 
 class MisoWriter:
@@ -24,12 +41,14 @@ class MisoWriter:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session: requests.Session = requests.Session()
         self.session.mount("https://", adapter)
+        self.session.mount("https://", GzipAdapter())
         self.api_server = api_server
         self.api_key = api_key
         self.use_async = use_async
 
     def _send_request(self, data: List[Dict], data_type: str):
-        logger.info("try to send {} requests to {}-data-api.".format(len(data), data_type))
+        logger.info("try to send %s requests to %s-data-api, async:%s.",
+                    len(data), data_type, self.use_async)
         try:
             response = self.session.post(
                 '{}/v1/{}?api_key={}&async={}'.format(self.api_server, data_type, self.api_key,
