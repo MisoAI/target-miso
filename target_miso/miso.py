@@ -13,21 +13,6 @@ from urllib3 import Retry
 logger = singer.get_logger()
 
 
-class GzipAdapter(HTTPAdapter):
-
-    def add_headers(self, request, **kw):
-        request.headers['Content-Encoding'] = 'gzip'
-
-    def send(self, request, stream=False, **kw):
-        if stream is True:
-            request.body = gzip.GzipFile(filename=request.url,
-                                         fileobj=request.body)
-        else:
-            request.body = zlib.compress(request.body)
-
-        return super(GzipAdapter, self).send(request, stream, **kw)
-
-
 class MisoWriter:
     def __init__(self, api_server: str, api_key: str, use_async: bool):
         self.type_to_buffer = {'products': [], 'interactions': [], 'users': []}
@@ -41,7 +26,6 @@ class MisoWriter:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session: requests.Session = requests.Session()
         self.session.mount("https://", adapter)
-        self.session.mount("https://", GzipAdapter())
         self.api_server = api_server
         self.api_key = api_key
         self.use_async = use_async
