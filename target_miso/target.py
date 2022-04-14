@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 import datetime
 import io
-
-import pytz
-import simplejson as json
 import sys
 from pathlib import Path
-from typing import Dict, Callable
+from typing import Dict, Callable, Set
 
 import _jsonnet
+import pytz
 import sentry_sdk
+import simplejson as json
 import singer
 from jinja2 import Template
 from sentry_sdk import set_tag
 
 from target_miso.extensions import get_jinja_env
-from .miso import MisoWriter
+from target_miso.py_extensions import import_code_path
+from .miso import MisoWriter, check_miso_data_type
 
 logger = singer.get_logger()
 
@@ -45,6 +45,14 @@ def timestamp_to_str(dt: datetime.datetime):
     return dt.isoformat()
 
 
+# stream to the seen product_ids or user_ids
+stream_to_ids: Dict[str, Set] = {}
+# stream to data type
+stream_to_datatype: Dict[str, str] = {}
+# stream to last seen activate version
+stream_to_activate_version: Dict[str, int] = {}
+
+
 def persist_messages(messages, miso_client: MisoWriter,
                      stream_to_template_jsonnet: Dict[str, str],
                      stream_to_template_jinja: Dict[str, Template],
@@ -64,23 +72,23 @@ def persist_messages(messages, miso_client: MisoWriter,
             raise ValueError(f"template for stream: {msg_obj['stream']} not found")
         if message_type == 'RECORD':
             # write a record to Miso
-            steam_name = msg_obj['stream']
+            stream_name = msg_obj['stream']
             miso_record = None
-            if steam_name in stream_to_template_jsonnet:
-                template: str = stream_to_template_jsonnet[steam_name]
+            if stream_name in stream_to_template_jsonnet:
+                template: str = stream_to_template_jsonnet[stream_name]
                 try:
                     miso_record = eval_jsonnet(template, msg_obj['record'])
                 except Exception:
                     logger.exception("Unable to parse record: %s", msg_obj['record'])
-            if steam_name in stream_to_template_jinja:
-                jinja_template: Template = stream_to_template_jinja[steam_name]
+            if stream_name in stream_to_template_jinja:
+                jinja_template: Template = stream_to_template_jinja[stream_name]
                 try:
                     miso_record = json.loads(jinja_template.render(data=msg_obj['record']))
                 except Exception:
                     logger.exception("Unable to parse record: %s", msg_obj['record'])
-            if steam_name in stream_to_python_func:
+            if stream_name in stream_to_python_func:
                 try:
-                    miso_record = stream_to_python_func[steam_name](msg_obj['record'])
+                    miso_record = stream_to_python_func[stream_name](msg_obj['record'])
                 except Exception:
                     logger.exception("Unable to parse record: %s", msg_obj['record'])
 
@@ -91,6 +99,12 @@ def persist_messages(messages, miso_client: MisoWriter,
                         miso_record[field] = timestamp_to_str(miso_record[field])
 
                 miso_client.write_record(miso_record)
+                stream_to_datatype[stream_name] = check_miso_data_type(miso_record)
+                if stream_to_datatype[stream_name] != 'interactions' \
+                        and stream_name in stream_to_ids \
+                        and stream_name in stream_to_activate_version:
+                    record_id = miso_record.get('product_id') or miso_record.get('user_id')
+                    stream_to_ids[stream_name].add(record_id)
         elif message_type == 'STATE':
             logger.debug('Setting state to {}'.format(msg_obj['value']))
             state = msg_obj['value']
@@ -98,46 +112,30 @@ def persist_messages(messages, miso_client: MisoWriter,
             stream = msg_obj['stream']
             schemas[stream] = msg_obj['schema']
         elif message_type == 'ACTIVATE_VERSION':
-            pass
+            logger.warning('ACTIVATE_VERSION %s', msg_obj)
+            stream_name = msg_obj['stream']
+            data_type = stream_to_datatype.get(stream_name)
+            if stream_name in stream_to_activate_version \
+                    and stream_name in stream_to_ids \
+                    and stream_to_activate_version[stream_name] == msg_obj['version'] \
+                    and data_type in ('users', 'products'):
+                logger.warning('Perform ids check %s:%s', stream_name, msg_obj['version'])
+                existing_ids: Set[str] = set(miso_client.get_existing_ids(data_type))
+                to_delete_ids = existing_ids - stream_to_ids[stream_name]
+                if to_delete_ids:
+                    logger.warning('Delete %s %s: %s', len(to_delete_ids), stream_name, to_delete_ids)
+                    miso_client.delete_records(to_delete_ids, data_type)
+                del stream_to_ids[stream_name]
+                del stream_to_activate_version[stream_name]
+            else:
+                logger.warning('Create new activate version %s:%s', stream_name, msg_obj['version'])
+                stream_to_activate_version[stream_name] = msg_obj['version']
+                stream_to_ids[stream_name] = set()
         else:
             logger.warning("Unknown message type {} in message {}".format(msg_obj['type'], msg_obj))
     # write remain records in the buffer
     miso_client.flush()
-
-    # # Start delete removed data
-    # if len(product_ids) > 0:
-    #     delete_datasets(product_ids, 'products')
-    # if len(user_ids) > 0:
-    #     delete_datasets(user_ids, 'users')
     return state
-
-
-# def delete_datasets(ids: list, data_type: str):
-#     del_ids = set(get_miso_ids(data_type)).difference(set(ids))
-#     if len(del_ids) > 0:
-#         bulk_delete_product(del_ids, data_type)
-def import_code(code, name) -> Callable:
-    """ code can be any object containing code -- string, file object, or
-       compiled code object. Returns a new module object initialized
-       by dynamically importing the given code and optionally adds it
-       to sys.modules under the given name.
-    """
-    import imp
-    try:
-        module = imp.new_module(name)
-        exec(code, module.__dict__)
-    except:
-        logger.exception('Failed to load code from %s', name)
-        raise
-    if 'transform' not in module.__dict__:
-        raise ValueError('There is no transform function in the code')
-    return module.transform
-
-
-def import_code_path(path: Path) -> Callable:
-    """ import code in a file """
-    name = path.stem.replace('-', '_').replace('/', '_').replace('.', '_')
-    return import_code(path.open().read(), name)
 
 
 def main():
