@@ -2,6 +2,7 @@
 import datetime
 import io
 import sys
+from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Callable, Set
 
@@ -46,11 +47,9 @@ def timestamp_to_str(dt: datetime.datetime):
 
 
 # stream to the seen product_ids or user_ids
-stream_to_ids: Dict[str, Set] = {}
+stream_to_ids: Dict[str, Set] = defaultdict(set)
 # stream to data type
 stream_to_datatype: Dict[str, str] = {}
-# stream to last seen activate version
-stream_to_activate_version: Dict[str, int] = {}
 
 
 def persist_messages(messages, miso_client: MisoWriter,
@@ -100,9 +99,7 @@ def persist_messages(messages, miso_client: MisoWriter,
 
                 miso_client.write_record(miso_record)
                 stream_to_datatype[stream_name] = check_miso_data_type(miso_record)
-                if stream_to_datatype[stream_name] != 'interactions' \
-                        and stream_name in stream_to_ids \
-                        and stream_name in stream_to_activate_version:
+                if stream_to_datatype[stream_name] != 'interactions':
                     record_id = miso_record.get('product_id') or miso_record.get('user_id')
                     stream_to_ids[stream_name].add(record_id)
         elif message_type == 'STATE':
@@ -115,10 +112,7 @@ def persist_messages(messages, miso_client: MisoWriter,
             logger.warning('ACTIVATE_VERSION %s', msg_obj)
             stream_name = msg_obj['stream']
             data_type = stream_to_datatype.get(stream_name)
-            if stream_name in stream_to_activate_version \
-                    and stream_name in stream_to_ids \
-                    and stream_to_activate_version[stream_name] == msg_obj['version'] \
-                    and data_type in ('users', 'products'):
+            if stream_to_ids.get(stream_name) and data_type in ('users', 'products'):
                 logger.warning('Perform ids check %s:%s', stream_name, msg_obj['version'])
                 existing_ids: Set[str] = set(miso_client.get_existing_ids(data_type))
                 to_delete_ids = existing_ids - stream_to_ids[stream_name]
@@ -126,11 +120,9 @@ def persist_messages(messages, miso_client: MisoWriter,
                     logger.warning('Delete %s %s: %s', len(to_delete_ids), stream_name, to_delete_ids)
                     miso_client.delete_records(to_delete_ids, data_type)
                 del stream_to_ids[stream_name]
-                del stream_to_activate_version[stream_name]
+                del stream_to_datatype[stream_name]
             else:
-                logger.warning('Create new activate version %s:%s', stream_name, msg_obj['version'])
-                stream_to_activate_version[stream_name] = msg_obj['version']
-                stream_to_ids[stream_name] = set()
+                logger.warning("Ignore ACTIVATE_VERSION %s", msg_obj)
         else:
             logger.warning("Unknown message type {} in message {}".format(msg_obj['type'], msg_obj))
     # write remain records in the buffer
