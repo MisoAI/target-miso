@@ -119,6 +119,8 @@ def persist_messages(messages, miso_client: MisoWriter,
                 if to_delete_ids:
                     logger.warning('Delete %s %s: %s', len(to_delete_ids), stream_name, to_delete_ids)
                     miso_client.delete_records(to_delete_ids, data_type)
+                else:
+                    logger.warning('No need to delete anything from Miso for %s', stream_name)
                 del stream_to_ids[stream_name]
                 del stream_to_datatype[stream_name]
             else:
