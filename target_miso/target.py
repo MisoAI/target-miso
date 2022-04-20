@@ -131,6 +131,7 @@ def persist_messages(messages, miso_client: MisoWriter,
                     # whether we need to upload this record
                     if is_upload_needed(miso_upload_state, stream_name, record_id, miso_record):
                         miso_client.write_record(miso_record)
+                        #
                         if stream_to_datatype[stream_name] == 'products':
                             miso_upload_state = update_state(
                                 miso_upload_state, stream_name, record_id, record=miso_record
