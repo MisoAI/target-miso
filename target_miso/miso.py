@@ -45,8 +45,8 @@ class MisoWriter:
                     len(data), data_type, self.use_async)
         try:
             response = self.session.post(
-                '{}/v1/{}?api_key={}&async={}'.format(self.api_server, data_type, self.api_key,
-                                                      1 if self.use_async else 0),
+                '{}/v1/{}?api_key={}{}'.format(self.api_server, data_type, self.api_key,
+                                               "&async=1" if self.use_async else ""),
                 json={'data': list(data)}
             )
             response.raise_for_status()
