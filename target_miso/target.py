@@ -55,36 +55,35 @@ stream_to_datatype: Dict[str, str] = {}
 MISO_STATE_KEY = '__miso_target_state__'
 
 
-def update_state(state, stream_name: str, record_id, record: Optional[Dict]):
+def update_state(miso_upload_state: Dict, stream_name: str, record_id: str, record: Optional[Dict]):
     """ Remember what we uploaded """
-    if state is None:
-        state = {}
-    if MISO_STATE_KEY not in state:
-        state[MISO_STATE_KEY] = {}
-    if stream_name not in state[MISO_STATE_KEY]:
-        state[MISO_STATE_KEY][stream_name] = {}
+    if not miso_upload_state:
+        miso_upload_state = {}
+    if stream_name not in miso_upload_state:
+        miso_upload_state[stream_name] = {}
     if record:
         record_hash = hashlib.md5(json.dumps(record, sort_keys=True).encode()).hexdigest()
-        state[MISO_STATE_KEY][stream_name][record_id] = record_hash
+        miso_upload_state[stream_name][record_id] = record_hash
     else:
-        if record_id in state[MISO_STATE_KEY][stream_name]:
-            del state[MISO_STATE_KEY][stream_name][record_id]
-    return state
+        if record_id in miso_upload_state[stream_name]:
+            del miso_upload_state[stream_name][record_id]
+    return miso_upload_state
 
 
-def is_upload_needed(state: Dict, stream_name: str, record_id, record: Dict):
+def is_upload_needed(miso_upload_state: Dict, stream_name: str, record_id: str, record: Dict):
     """ Whether we need to upload a record to Miso """
-    if state is None:
+    if miso_upload_state is None:
         return True
     record_hash = hashlib.md5(json.dumps(record, sort_keys=True).encode()).hexdigest()
-    return state.get(MISO_STATE_KEY, {}).get(stream_name, {}).get(record_id) != record_hash
+    return miso_upload_state.get(stream_name, {}).get(record_id) != record_hash
 
 
 def persist_messages(messages, miso_client: MisoWriter,
                      stream_to_template_jsonnet: Dict[str, str],
                      stream_to_template_jinja: Dict[str, Template],
                      stream_to_python_func: Dict[str, Callable]):
-    state = {}
+    state = None
+    miso_upload_state = {}
     schemas = {}
     for message in messages:
         try:
@@ -124,20 +123,23 @@ def persist_messages(messages, miso_client: MisoWriter,
                 for field in check_timestamp_fields:
                     if isinstance(miso_record.get(field), datetime.datetime):
                         miso_record[field] = timestamp_to_str(miso_record[field])
-                record_id = None
+                stream_to_datatype[stream_name] = check_miso_data_type(miso_record)
                 if stream_to_datatype[stream_name] != 'interactions':
                     record_id = miso_record.get('product_id') or miso_record.get('user_id')
-                if record_id:
                     # maintain the ids we have seen
                     stream_to_ids[stream_name].add(record_id)
-                if record_id and is_upload_needed(state, stream_name, record_id, miso_record):
-                    miso_client.write_record(miso_record)
-                    state = update_state(state, stream_name, record_id, record=miso_record)
-                stream_to_datatype[stream_name] = check_miso_data_type(miso_record)
+                    # whether we need to upload this record
+                    if is_upload_needed(miso_upload_state, stream_name, record_id, miso_record):
+                        miso_client.write_record(miso_record)
+                        miso_upload_state = update_state(miso_upload_state, stream_name, record_id, record=miso_record)
+
 
         elif message_type == 'STATE':
             logger.debug('Setting state to {}'.format(msg_obj['value']))
             state = msg_obj['value']
+            if not miso_upload_state:
+                # update miso_upload_state
+                miso_upload_state = state.get(MISO_STATE_KEY, {})
         elif message_type == 'SCHEMA':
             stream = msg_obj['stream']
             schemas[stream] = msg_obj['schema']
@@ -154,7 +156,7 @@ def persist_messages(messages, miso_client: MisoWriter,
                     miso_client.delete_records(to_delete_ids, data_type)
                     for record_id in to_delete_ids:
                         # maintain state
-                        state = update_state(state, stream_name, record_id, None)
+                        miso_upload_state = update_state(miso_upload_state, stream_name, record_id, None)
                 else:
                     logger.warning('No need to delete anything from Miso for %s', stream_name)
                 del stream_to_ids[stream_name]
@@ -165,6 +167,7 @@ def persist_messages(messages, miso_client: MisoWriter,
             logger.warning("Unknown message type {} in message {}".format(msg_obj['type'], msg_obj))
     # write remain records in the buffer
     miso_client.flush()
+    state[MISO_STATE_KEY] = miso_upload_state
     return state
 
 
