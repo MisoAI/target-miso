@@ -82,7 +82,7 @@ def persist_messages(messages, miso_client: MisoWriter,
                      stream_to_template_jsonnet: Dict[str, str],
                      stream_to_template_jinja: Dict[str, Template],
                      stream_to_python_func: Dict[str, Callable]):
-    state = None
+    state = {}
     miso_upload_state = {}
     schemas = {}
     for message in messages:
