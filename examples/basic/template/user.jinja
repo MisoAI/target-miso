@@ -1,0 +1,11 @@
+{
+  "user_id": "{{ data.uuid }}",
+  "city": "{{ data.city }}",
+  "state": "{{ data.state }}",
+  "country": "{{ data.country }}",
+  "name": "{{ data.first_name }} {{ data.last_name }}",
+  "custom_attributes": {
+    "username": "{{ data.username }}",
+    "email": "{{ data.email if data.email }}"
+  }
+}

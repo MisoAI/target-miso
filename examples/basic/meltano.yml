@@ -1,0 +1,31 @@
+version: 1
+default_environment: dev
+project_id: 1bae938d-4538-42f7-9415-a4e6df3bb375
+plugins:
+  extractors:
+  - name: tap-csv
+    variant: meltanolabs
+    pip_url: git+https://github.com/MeltanoLabs/tap-csv.git
+    config:
+      files:
+      - entity: user
+        path: data/user.csv
+        keys:
+        - uuid
+    select:
+    - user.*
+    metadata:
+      user:
+        replication-method: FULL_TABLE
+  loaders:
+  - name: target-miso
+    namespace: target_miso
+    pip_url: git+https://github.com/askmiso/target-miso.git@v0.9.1
+    executable: target-miso
+    config:
+      template_folder: template
+      api_server: https://api.askmiso.com
+      api_key: your_miso_api_key
+      use_async: false
+environments:
+- name: dev
