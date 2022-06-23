@@ -54,6 +54,13 @@ To specify how records are transformed into payloads of Miso API, for each strea
 }
 ```
 
+### Rules on output data types
+
+Miso takes 3 kinds of data records: `user`, `product`, and `interaction`. A record is classified into one of these type by the following rules:
+* If the payload contains the `type` field, it is an interaction record.
+* If the payload contains the `user_id` field, it is a user record.
+* If the payload contains the `product_id` field, it is a product record.
+
 ### Customized filters
 
 We created some customize filters to dealing our current customers' data. Please feel free to add or optimize the filter for these filters.
