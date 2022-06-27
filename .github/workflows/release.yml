@@ -1,16 +1,19 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: Version
-        required: true
+  release:
+    types: [published]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Get version
+        id: version
+        run: |
+          VERSION=${{ github.event.release.tag_name }} |
+          echo "::set-output name=version::${VERSION:1}"
+      - name: Checkout
       - uses: actions/checkout@v3
       - name: Set up Python
         uses: actions/setup-python@v3
@@ -21,7 +24,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel build
       - name: Update version
         run: |
-          echo "${{ github.event.inputs.version }}" > ./VERSION
+          echo "${{steps.version.outputs.version}}" > ./VERSION
       - name: Build distribution
         run: |
           python -m build
@@ -29,9 +32,4 @@ jobs:
       - name: Commit version update
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: Bump version to ${{ github.event.inputs.version }}
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: ${{ github.event.inputs.version }}
-          tag_name: v${{ github.event.inputs.version }}
+          commit_message: Bump version to ${{steps.version.outputs.version}}
