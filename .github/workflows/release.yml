@@ -29,7 +29,3 @@ jobs:
         run: |
           python -m build
       # TODO: publish here
-      - name: Commit version update
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: Bump version to ${{steps.version.outputs.version}}
