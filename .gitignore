@@ -96,3 +96,5 @@ ENV/
 bin
 templates/*.json
 config.json
+
+.DS_Store

@@ -4,8 +4,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from target_miso.extensions import get_jinja_env
-from target_miso.target import persist_messages, import_code
-
+from target_miso.py_extensions import import_code
+from target_miso.target import persist_messages
 
 def test_persist_message():
     """ Test persist message function is working as expected """
