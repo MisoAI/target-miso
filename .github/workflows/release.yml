@@ -11,8 +11,8 @@ jobs:
       - name: Get version
         id: version
         run: |
-          VERSION=${{ github.event.release.tag_name }} |
-          echo "::set-output name=version::${VERSION:1}"
+          VERSION=${{ github.event.release.tag_name }}
+          echo "::set-output name=version::$(echo $VERSION | sed -e \"s/v//gI\")"
       - name: Checkout
         uses: actions/checkout@v3
       - name: Set up Python
