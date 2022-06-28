@@ -20,12 +20,12 @@ plugins:
   loaders:
   - name: target-miso
     namespace: target_miso
-    pip_url: target-miso==0.9.2rc1
+    pip_url: target-miso==$TARGET_MISO_VERSION
     executable: target-miso
     config:
       template_folder: template
       api_server: https://api.askmiso.com
-      api_key: your_miso_api_key
+      api_key: $MISO_API_KEY
       use_async: false
 environments:
 - name: dev
