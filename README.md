@@ -15,7 +15,7 @@ plugins:
   loaders:
   - name: target-miso
     namespace: target_miso
-    pip_url: git+https://github.com/askmiso/target-miso.git@v0.9.1
+    pip_url: target-miso
     executable: target-miso
     config:
       template_folder: template
@@ -32,10 +32,10 @@ The config object accepts the following properties:
 
 | name | required | explanation |
 | --- | --- | --- |
-| `template_folder` | true | Where you keep the template files. The path is relative to Meltano project directory. |
-| `api_server` | true | The Miso API server host. |
-| `api_key` | true | Your Miso API key. |
-| `use_async` | true | Whether to send request in asynchronous mode. |
+| template_folder | true | Where you keep the template files. The path is relative to Meltano project directory. |
+| api_server | true | The Miso API server host. |
+| api_key | true | Your Miso API key. |
+| use_async | true | Whether to send request in asynchronous mode. |
 
 ## Template
 

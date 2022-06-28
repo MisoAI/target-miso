@@ -20,7 +20,8 @@ plugins:
   loaders:
   - name: target-miso
     namespace: target_miso
-    pip_url: target-miso==$TARGET_MISO_VERSION
+    pip_url: target-miso
+    #pip_url: target-miso==0.9.2
     executable: target-miso
     config:
       template_folder: template
