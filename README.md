@@ -64,13 +64,13 @@ Miso takes 3 kinds of data records: `user`, `product`, and `interaction`. A reco
 ### Customized filters
 
 We created some customize filters to dealing our current customers' data. Please feel free to add or optimize the filter for these filters.
-* datetime_format: We support three formats of date-time string.
-    * %Y-%m-%d %H:%M:%S
-    * %Y-%m-%dT%H:%M:%S+00:00
-    * %Y-%m-%d
-* list_of_str: In this filter, we support changing the string to a list of strings. Like , "apple" to ["apple"].
-* convert_categories: In this filter, we support changing the string to a list that supports a list of strings. Like, "apple" to [["apple"]].
-* remove_symbol: We support removing some symbols to an empty string in this filter. Like, double quote, backslash, \\N, “, \r\n, \n to an empty string.
+* `datetime_format`: We support three formats of date-time string.
+    * `%Y-%m-%d %H:%M:%S`
+    * `%Y-%m-%dT%H:%M:%S+00:00`
+    * `%Y-%m-%d`
+* `list_of_str`: In this filter, we support changing the string to a list of strings. Like , "apple" to ["apple"].
+* `convert_categories`: In this filter, we support changing the string to a list that supports a list of strings. Like, "apple" to [["apple"]].
+* `remove_symbol`: We support removing some symbols to an empty string in this filter. Like, double quote, backslash, \\N, “, \r\n, \n to an empty string.
 
 ----
 
