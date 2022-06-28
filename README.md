@@ -1,6 +1,12 @@
 # target-miso
 This package is a [Singer](https://singer.io) target that sends data to Miso's [Data API](https://api.askmiso.com). Being a singer target, you can integrate it into your data pipeline using your favorite DataOps framework, for instance, [Meltano](https://meltano.com/).
 
+<p>
+  <a href="https://pypi.org/project/target-miso/"><img alt="PyPI" src="https://img.shields.io/pypi/v/target-miso"></a>
+  <img alt="PyPI - Python Version: 3" src="https://img.shields.io/pypi/pyversions/target-miso">
+  <a href="https://github.com/MisoAI/target-miso/tree/main/LICENSE"><img alt="PyPI - License: MIT" src="https://img.shields.io/pypi/l/target-miso"></a>
+</p>
+
 # Use with Meltano
 
 Follow the steps below to setup `target-miso` in your Meltano project. Or see the most essential project example [here](https://github.com/MisoAI/target-miso/tree/main/examples/basic).
