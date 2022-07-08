@@ -43,6 +43,10 @@ The config object accepts the following properties:
 | api_key | true | Your Miso API key. |
 | use_async | true | Whether to send request in asynchronous mode. |
 
+## Replication methods
+
+Currently, this target supports `FULL_TABLE` and `INCREMENTAL` replication methods. `LOG_BASED` is not yet supported.
+
 ## Template
 
 To specify how records are transformed into payloads of Miso API, for each stream from the tap, put a corresponding [jinja2](https://jinja.palletsprojects.com/en/3.1.x/) template file in your template folder. For example, given a stream `product`, put a template file `product.jinja` like this:
@@ -67,16 +71,38 @@ Miso takes 3 kinds of data records: `user`, `product`, and `interaction`. A reco
 * If the payload contains the `user_id` field, it is a user record.
 * If the payload contains the `product_id` field, it is a product record.
 
-### Customized filters
+### Built-in filters
 
-We created some customize filters to dealing our current customers' data. Please feel free to add or optimize the filter for these filters.
-* `datetime_format`: We support three formats of date-time string.
-    * `%Y-%m-%d %H:%M:%S`
-    * `%Y-%m-%dT%H:%M:%S+00:00`
-    * `%Y-%m-%d`
-* `list_of_str`: In this filter, we support changing the string to a list of strings. Like , "apple" to ["apple"].
-* `convert_categories`: In this filter, we support changing the string to a list that supports a list of strings. Like, "apple" to [["apple"]].
-* `remove_symbol`: We support removing some symbols to an empty string in this filter. Like, double quote, backslash, \\N, “, \r\n, \n to an empty string.
+Target Miso comes with a few built-in filters that can be used in template expressions:
+
+#### `datetime_format`
+
+Takes a string in any format compatible with [dateparser](https://dateparser.readthedocs.io/en/latest/) and output in ISO format, which is desired by Miso API.
+
+#### `list_of_str`
+
+Wrap a string to a singleton list of string. For example, `"apple"` to `["apple"]`.
+
+#### `convert_categories`
+
+Wrap a string to a singleton double-layered list of string. For example, `"apple"` to `[["apple"]]`.
+
+#### `remove_symbol`
+
+1. Convert an int to string.
+1. Strip off some special characters from input string, including: `"`, `\`, `\\N`, `“`, `\r\n`, `\n`, `\r`.
+
+#### `split`
+
+Split a string into a list by comma.
+
+#### `fix_url`
+
+Encode (as URL component) the path component of a URL string.
+
+#### `jsonify`
+
+Serialize an obj to a JSON string.
 
 ----
 
