@@ -1,0 +1,13 @@
+{
+  "user_id": "{{ data.id }}",
+  "city": "{{ data.city }}",
+  "state": "{{ data.state }}",
+  "country": "{{ data.country }}",
+  "name": "{{ data.first_name }} {{ data.last_name }}",
+  "custom_attributes": {
+    "username": "{{ data.username }}",
+    "email": "{{ data.email if data.email }}",
+    "date_of_birth": "{{ data.date_of_birth | datetime_format }}",
+    "create_time": "{{ data.create_time | datetime_format }}"
+  }
+}

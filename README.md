@@ -9,7 +9,7 @@ This package is a [Singer](https://singer.io) target that sends data to Miso's [
 
 # Use with Meltano
 
-Follow the steps below to setup `target-miso` in your Meltano project. Or see the most essential project example [here](https://github.com/MisoAI/target-miso/tree/main/examples/basic).
+Follow the steps below to setup `target-miso` in your Meltano project. Or see the most essential project example [here](https://github.com/MisoAI/target-miso/tree/main/examples/csv).
 
 ## Setup
 Setup `meltano.yml` like this:
