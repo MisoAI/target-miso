@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from typing import List, Dict, Set
 
+import re
 import requests
 import singer
 from requests import HTTPError
@@ -22,6 +23,8 @@ def check_miso_data_type(record):
         raise ValueError(f'This record is not product, user, nor interaction: {record}')
     return data_type
 
+def find_erroneous_record(res_text):
+    return sorted(set([int(x) for x in re.findall('data\.(\d+)\.', res_text)]))
 
 class MisoWriter:
     def __init__(self, api_server: str, api_key: str, use_async: bool):
@@ -52,7 +55,11 @@ class MisoWriter:
             response.raise_for_status()
             logger.info(response.text)
         except HTTPError as error:
-            logger.exception("Request %s\n Response %s", data, error.response.text)
+            if error.response.status_code == 422:
+                data_len = len(data)
+                for i in find_erroneous_record(error.response.text):
+                    logger.exception("Data record [%i/%i] %s", i, data_len, data[i])
+            logger.exception("Response %s", error.response.text)
         except ConnectionError:
             logger.exception('Connection error')
 
