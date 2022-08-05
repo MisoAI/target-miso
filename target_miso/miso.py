@@ -27,7 +27,7 @@ def find_erroneous_record(res_text):
     return sorted(set([int(x) for x in re.findall('data\.(\d+)\.', res_text)]))
 
 class MisoWriter:
-    def __init__(self, api_server: str, api_key: str, use_async: bool):
+    def __init__(self, api_server: str, api_key: str, use_async: bool, dry_run: bool):
         self.type_to_buffer = {'products': [], 'interactions': [], 'users': []}
 
         retry_strategy = Retry(
@@ -42,14 +42,16 @@ class MisoWriter:
         self.api_server = api_server
         self.api_key = api_key
         self.use_async = use_async
+        self.dry_run = dry_run
 
     def _send_request(self, data: List[Dict], data_type: str):
         logger.info("try to send %s requests to %s-data-api, async:%s.",
                     len(data), data_type, self.use_async)
         try:
             response = self.session.post(
-                '{}/v1/{}?api_key={}{}'.format(self.api_server, data_type, self.api_key,
-                                               "&async=1" if self.use_async else ""),
+                '{}/v1/{}?api_key={}{}{}'.format(self.api_server, data_type, self.api_key,
+                                                 "&dry_run=1" if self.dry_run else "",
+                                                 "&async=1" if not self.dry_run and self.use_async else ""),
                 json={'data': list(data)}
             )
             response.raise_for_status()
@@ -78,6 +80,9 @@ class MisoWriter:
             raise
 
     def delete_records(self, bulk_del_ids: Set[str], data_type: str):
+        if self.dry_run:
+            logger.info("Skipped in dry run mode: send bulk delete %s by ids to miso. Ids: %s", data_type, bulk_del_ids)
+            return
         """ Delete a list of records from Miso """
         logger.info("Send bulk delete %s by ids to miso. Ids: %s", data_type, bulk_del_ids)
         col_name = 'product_ids'

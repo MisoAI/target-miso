@@ -186,8 +186,9 @@ def main():
     api_server = params.config.get('api_server') or 'https://api.askmiso.com'
     api_key = params.config['api_key']
     use_async = 'use_async' in params.config and (str(params.config.get('use_async')).lower() in ('true', '1'))
+    dry_run = 'dry_run' in params.config and (str(params.config.get('dry_run')).lower() in ('true', '1'))
 
-    miso_client = MisoWriter(api_server, api_key, use_async)
+    miso_client = MisoWriter(api_server, api_key, use_async, dry_run)
 
     if 'sentry_dsn' in params.config:
         sentry_sdk.init(dsn=params.config['sentry_dsn'])
