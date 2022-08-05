@@ -78,7 +78,8 @@ def is_upload_needed(miso_upload_state: Dict, stream_name: str, record_id: str, 
     return miso_upload_state.get(stream_name, {}).get(record_id) != record_hash
 
 
-def persist_messages(messages, miso_client: MisoWriter,
+def persist_messages(messages,
+                     miso_client: MisoWriter,
                      stream_to_template_jsonnet: Dict[str, str],
                      stream_to_template_jinja: Dict[str, Template],
                      stream_to_python_func: Dict[str, Callable]):
@@ -179,12 +180,13 @@ def persist_messages(messages, miso_client: MisoWriter,
 
 
 def main():
-    params = singer.utils.parse_args({'template_folder', 'api_server', 'api_key'})
+    params = singer.utils.parse_args({'template_folder', 'api_key'})
 
     # load Miso API parameters
-    api_server = params.config['api_server']
+    api_server = params.config.get('api_server') or 'https://api.askmiso.com'
     api_key = params.config['api_key']
-    use_async = str(params.config['use_async']).lower() in ('true', '1')
+    use_async = 'use_async' in params.config and (str(params.config.get('use_async')).lower() in ('true', '1'))
+
     miso_client = MisoWriter(api_server, api_key, use_async)
 
     if 'sentry_dsn' in params.config:
@@ -209,7 +211,8 @@ def main():
         template_folder_path.glob('*.py')}
 
     input_messages = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
-    state = persist_messages(input_messages, miso_client,
+    state = persist_messages(input_messages,
+                             miso_client,
                              stream_to_template_jsonnet,
                              stream_to_template_jinja,
                              stream_to_python_func)
