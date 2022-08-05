@@ -25,9 +25,7 @@ plugins:
     executable: target-miso
     config:
       template_folder: template
-      api_server: https://api.askmiso.com
       api_key: your_miso_api_key
-      use_async: false
 ```
 
 Make sure to run `meltano install` to install the dependency.
@@ -41,8 +39,8 @@ The config object accepts the following properties:
 | api_server | no | https://api.askmiso.com | The Miso API server host. |
 | api_key | yes | | Your Miso API key. |
 | template_folder | yes | | Where you keep the template files. The path is relative to Meltano project directory. |
-| use_async | no | false | Whether to send request in asynchronous mode. |
-| dry_run | no | false | Whether to send request in dry-run mode. |
+| use_async | no | False | Whether to send request in asynchronous mode. |
+| dry_run | no | False | Whether to send request in dry-run mode. |
 
 ## Replication methods
 

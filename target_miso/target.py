@@ -82,7 +82,8 @@ def persist_messages(messages,
                      miso_client: MisoWriter,
                      stream_to_template_jsonnet: Dict[str, str],
                      stream_to_template_jinja: Dict[str, Template],
-                     stream_to_python_func: Dict[str, Callable]):
+                     stream_to_python_func: Dict[str, Callable],
+                     extra_config):
     state = {}
     miso_upload_state = {}
     schemas = {}
@@ -155,7 +156,8 @@ def persist_messages(messages,
             logger.warning('ACTIVATE_VERSION %s', msg_obj)
             stream_name = msg_obj['stream']
             data_type = stream_to_datatype.get(stream_name)
-            if stream_to_ids.get(stream_name) and data_type in ('users', 'products'):
+            shall_delete = not extra_config['insert_only']
+            if shall_delete and stream_to_ids.get(stream_name) and data_type in ('users', 'products'):
                 logger.warning('Perform ids check %s:%s', stream_name, msg_obj['version'])
                 existing_ids: Set[str] = set(miso_client.get_existing_ids(data_type))
                 to_delete_ids = existing_ids - stream_to_ids[stream_name]
@@ -178,6 +180,8 @@ def persist_messages(messages,
     state[MISO_STATE_KEY] = miso_upload_state
     return state
 
+def is_truthy(value):
+    return (str(value).lower() in ('true', '1')) if value != None else False
 
 def main():
     params = singer.utils.parse_args({'template_folder', 'api_key'})
@@ -185,10 +189,13 @@ def main():
     # load Miso API parameters
     api_server = params.config.get('api_server') or 'https://api.askmiso.com'
     api_key = params.config['api_key']
-    use_async = 'use_async' in params.config and (str(params.config.get('use_async')).lower() in ('true', '1'))
-    dry_run = 'dry_run' in params.config and (str(params.config.get('dry_run')).lower() in ('true', '1'))
+    use_async = is_truthy(params.config.get('use_async'))
+    dry_run = is_truthy(params.config.get('dry_run'))
 
     miso_client = MisoWriter(api_server, api_key, use_async, dry_run)
+    extra_config = {
+        'insert_only': is_truthy(params.config.get('insert_only'))
+    }
 
     if 'sentry_dsn' in params.config:
         sentry_sdk.init(dsn=params.config['sentry_dsn'])
@@ -216,7 +223,8 @@ def main():
                              miso_client,
                              stream_to_template_jsonnet,
                              stream_to_template_jinja,
-                             stream_to_python_func)
+                             stream_to_python_func,
+                             extra_config)
 
     emit_state(state)
     logger.debug("Exiting normally")
