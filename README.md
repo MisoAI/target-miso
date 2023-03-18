@@ -35,7 +35,7 @@ Make sure to run `meltano install` to install the dependency.
 The config object accepts the following properties:
 
 | name | required | default | explanation |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | api_server | no | https://api.askmiso.com | The Miso API server host. |
 | api_key | yes | | Your Miso API key. |
 | template_folder | yes | | Where you keep the template files. The path is relative to Meltano project directory. |
