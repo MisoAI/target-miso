@@ -17,8 +17,7 @@ plugins:
     - public-users.*
     metadata:
       public-users:
-        replication-method: INCREMENTAL
-        replication-key: create_time
+        replication-method: FULL_TABLE
   loaders:
   - name: target-miso
     namespace: target_miso
