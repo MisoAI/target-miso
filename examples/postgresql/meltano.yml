@@ -3,31 +3,32 @@ default_environment: dev
 project_id: d347016d-0d0d-4110-a0ad-cf7e516f76a2
 plugins:
   extractors:
-  - name: tap-postgres
-    executable: tap-postgres
-    variant: transferwise
-    pip_url: pipelinewise-tap-postgres
-    config:
-      host: $PG_HOST
-      port: $PG_PORT
-      user: $PG_USER
-      password: $PG_PASSWORD
-      dbname: $PG_DBNAME
-    select:
-    - public-users.*
-    metadata:
-      public-users:
-        replication-method: FULL_TABLE
+    - name: tap-postgres
+      executable: tap-postgres
+      variant: transferwise
+      pip_url: pipelinewise-tap-postgres
+      config:
+        host: $PG_HOST
+        port: $PG_PORT
+        user: $PG_USER
+        password: $PG_PASSWORD
+        dbname: $PG_DBNAME
+      select:
+        - public-users.*
+      metadata:
+        public-users:
+          replication-method: FULL_TABLE
   loaders:
-  - name: target-miso
-    namespace: target_miso
-    pip_url: target-miso
-    #pip_url: target-miso==0.9.2
-    executable: target-miso
-    config:
-      template_folder: template
-      api_server: $MISO_API_SERVER
-      api_key: $MISO_API_KEY
-      use_async: false
+    - name: target-miso
+      namespace: target_miso
+      pip_url: target-miso
+      #pip_url: target-miso==0.9.2
+      executable: target-miso
+      config:
+        template_folder: template
+        api_server: $MISO_API_SERVER
+        api_key: $MISO_API_KEY
+        use_async: false
+        write_record_limit: 100
 environments:
-- name: dev
+  - name: dev

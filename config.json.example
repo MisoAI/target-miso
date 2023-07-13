@@ -1,6 +1,7 @@
 {
     "template_folder": "/template",
     "api_server": "https://api.askmiso.com",
-    "api_key": "xxx"
-    "use_async": "true"
+    "api_key": "xxx",
+    "use_async": "true",
+    "write_record_limit": 100
 }

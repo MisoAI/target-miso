@@ -27,7 +27,7 @@ def find_erroneous_record(res_text):
     return sorted(set([int(x) for x in re.findall('data\.(\d+)\.', res_text)]))
 
 class MisoWriter:
-    def __init__(self, api_server: str, api_key: str, use_async: bool, dry_run: bool):
+    def __init__(self, api_server: str, api_key: str, use_async: bool, dry_run: bool, write_record_limit: int = 100):
         self.type_to_buffer = {'products': [], 'interactions': [], 'users': []}
 
         retry_strategy = Retry(
@@ -43,6 +43,7 @@ class MisoWriter:
         self.api_key = api_key
         self.use_async = use_async
         self.dry_run = dry_run
+        self.write_record_limit = write_record_limit
 
     def _send_request(self, data: List[Dict], data_type: str):
         logger.info("try to send %s requests to %s-data-api, async:%s.",
@@ -99,7 +100,7 @@ class MisoWriter:
         data_type = check_miso_data_type(record)
         buffer = self.type_to_buffer[data_type]
         buffer.append(record)
-        limit = 1000 if data_type == 'interactions' else 200
+        limit = 1000 if data_type == 'interactions' else self.write_record_limit
         if len(buffer) >= limit:
             self._send_request(buffer, data_type)
             buffer.clear()

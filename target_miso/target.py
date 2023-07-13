@@ -191,8 +191,9 @@ def main():
     api_key = params.config['api_key']
     use_async = is_truthy(params.config.get('use_async'))
     dry_run = is_truthy(params.config.get('dry_run'))
+    write_record_limit = int(params.config.get('write_record_limit', 100))
 
-    miso_client = MisoWriter(api_server, api_key, use_async, dry_run)
+    miso_client = MisoWriter(api_server, api_key, use_async, dry_run, write_record_limit)
     extra_config = {
         'insert_only': is_truthy(params.config.get('insert_only'))
     }
