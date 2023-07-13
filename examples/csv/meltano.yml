@@ -28,5 +28,6 @@ plugins:
         api_server: $MISO_API_SERVER
         api_key: $MISO_API_KEY
         use_async: false
+        write_record_limit: 100
 environments:
   - name: dev

@@ -41,6 +41,7 @@ The config object accepts the following properties:
 | template_folder | yes | | Where you keep the template files. The path is relative to Meltano project directory. |
 | use_async | no | False | Whether to send request in asynchronous mode. |
 | dry_run | no | False | Whether to send request in dry-run mode. |
+| write_record_limit | no | 100 | The maximum number of records to be written. |
 
 ## Replication methods
 
